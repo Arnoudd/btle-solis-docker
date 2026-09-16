@@ -1,4 +1,4 @@
-# btle-solis
+# btle-solis-docker
 
 Dockerized interface for reading data from a supported Solis inverter over Bluetooth Low Energy (BLE) and publishing the data to MQTT.
 
