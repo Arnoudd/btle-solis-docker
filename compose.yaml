@@ -23,7 +23,7 @@ services:
       MQTT_PASSWORD: "YOUR_MQTT_PASSWORD"
 
       # Application
-      INTERVAL: "5"
+      INTERVAL: "15"
       TEST_MODE: "false"
       LITE_MODE: "true"
       LOG_LEVEL: "INFO"
