@@ -17,11 +17,12 @@ The original project was written for the Zonneplan Nexus Home battery with a Sol
 - Configuration is kept in `compose.yaml`.
 - Structured logging with configurable `LOG_LEVEL`.
 - Automatically restarts after failures or host reboots.
+- The same Compose file can be deployed with standard Docker Compose or Compose-compatible tools such as Portainer and Dockhand.
 
 ## Requirements
 
 - Raspberry Pi or Linux host with a Bluetooth adapter supported by BlueZ.
-- Docker Engine with Docker Compose.
+- Docker Engine with Docker Compose support.
 - A supported Solis inverter within Bluetooth range.
 - An MQTT broker.
 - Home Assistant if you want to consume the MQTT data as sensors.
@@ -105,6 +106,8 @@ docker --version
 docker compose version
 ```
 
+The project does not require Portainer, Dockhand, or any other management interface. They are optional ways of deploying the same Compose configuration.
+
 ## 4. Clone the repository
 
 ```bash
@@ -112,7 +115,7 @@ git clone https://github.com/Arnouddo/btle-solis.git
 cd btle-solis
 ```
 
-Replace the repository URL with the actual location of your fork/repository.
+If you are using your own fork, replace the repository URL accordingly.
 
 ## 5. Configure `compose.yaml`
 
@@ -134,6 +137,8 @@ MQTT_USERNAME: "YOUR_MQTT_USERNAME"
 MQTT_PASSWORD: "YOUR_MQTT_PASSWORD"
 ```
 
+If your MQTT broker does not require authentication, leave `MQTT_USERNAME` and `MQTT_PASSWORD` empty.
+
 ### Configuration options
 
 | Variable | Description | Default |
@@ -154,7 +159,7 @@ Do not commit real MQTT credentials to a public repository. Replace the placehol
 
 If you are maintaining your own private fork/repository, keeping the values directly in `compose.yaml` is supported by design.
 
-## 6. Build and start
+## 6. Deploy with Docker Compose
 
 Build the image and start the container:
 
@@ -168,7 +173,54 @@ Check that it is running:
 docker compose ps
 ```
 
-## 7. View the logs
+## 7. Deploy with Portainer or Dockhand
+
+The repository contains a standard Compose file. You do **not** need Portainer or Dockhand to use this project, but the same `compose.yaml` can be deployed through Docker management tools that support Docker Compose stacks.
+
+### Portainer
+
+In Portainer, create a new **Stack** and deploy it from the Git repository, or paste/upload the contents of `compose.yaml`.
+
+If deploying from Git, select the repository and set the Compose file path to:
+
+```text
+compose.yaml
+```
+
+Edit the values in the `environment:` section before deploying, especially:
+
+- `SOLIS_MAC_ADDRESS`
+- `MQTT_BROKER`
+- `MQTT_PORT`
+- `MQTT_USERNAME`
+- `MQTT_PASSWORD`
+
+The target Docker endpoint must be the Linux/Raspberry Pi host that has the Bluetooth adapter. Running the container on a different Docker host will not give it access to the Raspberry Pi's Bluetooth hardware.
+
+### Dockhand
+
+Dockhand can likewise deploy the repository as a Docker Compose project. Point the project at the repository and use:
+
+```text
+compose.yaml
+```
+
+Make sure the project is deployed to the Docker host that physically has the Bluetooth adapter connected.
+
+### Important: Bluetooth is host-specific
+
+This application uses:
+
+```yaml
+network_mode: host
+privileged: true
+```
+
+and mounts the host D-Bus socket. These settings are intentional because the application needs direct access to the host Bluetooth adapter.
+
+A Portainer or Dockhand server running on another machine can manage the Raspberry Pi remotely, but the **container itself must run on the Raspberry Pi (or another host with the required Bluetooth adapter)**.
+
+## 8. View the logs
 
 Follow the application logs:
 
@@ -190,7 +242,7 @@ Then recreate the container:
 docker compose up -d --build
 ```
 
-## 8. MQTT output
+## 9. MQTT output
 
 The application publishes the inverter data to:
 
@@ -202,7 +254,7 @@ The payload is a JSON object containing the values from the configured register 
 
 For example, in `LITE_MODE` the application reads the configured register blocks from `REGISTERS_LITE` and publishes their resulting values.
 
-## 9. Home Assistant
+## 10. Home Assistant
 
 Home Assistant can consume the MQTT topic and expose the values as sensors.
 
@@ -214,7 +266,7 @@ Original project:
 
 https://github.com/cryptocake/btle-solis
 
-## 10. Updating
+## 11. Updating
 
 Pull the latest repository version and rebuild the container:
 
@@ -223,7 +275,9 @@ git pull
 docker compose up -d --build
 ```
 
-## 11. Stopping and starting
+When using Portainer, Dockhand, or another Compose management tool, use its normal redeploy/update function after pulling the new repository version.
+
+## 12. Stopping and starting
 
 Stop the container:
 
@@ -237,7 +291,7 @@ Start it again:
 docker compose up -d
 ```
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 ### `hci0` is missing
 
@@ -323,7 +377,7 @@ The expected MQTT topic is:
 homeassistant/btle-solis/data
 ```
 
-## 13. LITE_MODE
+## 14. LITE_MODE
 
 With:
 
@@ -343,7 +397,7 @@ the full register map is used.
 
 LITE_MODE was introduced by the original project for installations where other battery information is already retrieved through another protocol.
 
-## 14. Logging
+## 15. Logging
 
 The application uses Python's standard logging framework.
 
