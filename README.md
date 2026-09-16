@@ -111,7 +111,7 @@ The project does not require Portainer, Dockhand, or any other management interf
 ## 4. Clone the repository
 
 ```bash
-git clone https://github.com/Arnouddo/btle-solis.git
+git clone https://github.com/Arnoudd/btle-solis.git
 cd btle-solis
 ```
 
