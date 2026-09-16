@@ -1,8 +1,0 @@
-.git
-.gitignore
-myenv
-__pycache__
-*.pyc
-mqtt.yaml
-mqtt-lite.yaml
-README.md
