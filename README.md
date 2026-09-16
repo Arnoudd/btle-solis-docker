@@ -74,7 +74,7 @@ The Solis inverter normally appears with a Bluetooth name beginning with `INV_`.
 
 Take note of its MAC address.
 
-The original project recommends trusting the device and testing a connection before running the application:
+The device needs to be trusted, and you can test a connection before running the application:
 
 ```text
 trust XX:XX:XX:XX:XX:XX
