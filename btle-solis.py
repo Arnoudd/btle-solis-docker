@@ -13,8 +13,7 @@ from bluepy.btle import (
 )
 
 import paho.mqtt.client as mqtt
-
-from registers import *
+import registers
 
 
 # =============================================================================
@@ -52,9 +51,13 @@ TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
 LITE_MODE = os.getenv("LITE_MODE", "true").lower() == "true"
 
 
+# Select register map and register blocks based on LITE_MODE.
 if LITE_MODE:
-    REGISTER_MAP = REGISTER_MAP_LITE
-    REGISTERS = REGISTERS_LITE
+    REGISTER_MAP = registers.REGISTER_MAP_LITE
+    REGISTERS = registers.REGISTERS_LITE
+else:
+    REGISTER_MAP = registers.REGISTER_MAP
+    REGISTERS = registers.REGISTERS
 
 
 # =============================================================================
