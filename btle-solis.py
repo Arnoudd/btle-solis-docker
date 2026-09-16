@@ -451,7 +451,7 @@ class BtleSolis:
 
                 success_count += 1
 
-                logger.info(
+                logger.debug(
                     "Register block %s read successfully",
                     reg,
                 )
