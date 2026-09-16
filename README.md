@@ -155,8 +155,6 @@ If your MQTT broker does not require authentication, leave `MQTT_USERNAME` and `
 
 Replace the placeholder values in your local `compose.yaml` before starting the container.
 
-If you are maintaining your own private fork/repository, keeping the values directly in `compose.yaml` is supported by design.
-
 ## 6. Deploy with Docker Compose
 
 Build the image and start the container:
