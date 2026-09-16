@@ -131,8 +131,8 @@ At minimum, change:
 
 ```yaml
 SOLIS_MAC_ADDRESS: "XX:XX:XX:XX:XX:XX"
-MQTT_BROKER: "192.168.1.100"
-MQTT_PORT: "1883"
+MQTT_BROKER: "192.168.1.100" # Leave empty if not needed for our MQTT configuration
+MQTT_PORT: "1883" # Leave empty if not needed for our MQTT configuration
 MQTT_USERNAME: "YOUR_MQTT_USERNAME"
 MQTT_PASSWORD: "YOUR_MQTT_PASSWORD"
 ```
@@ -155,7 +155,7 @@ If your MQTT broker does not require authentication, leave `MQTT_USERNAME` and `
 
 ### MQTT credentials
 
-Do not commit real MQTT credentials to a public repository. Replace the placeholder values in your local `compose.yaml` before starting the container.
+Replace the placeholder values in your local `compose.yaml` before starting the container.
 
 If you are maintaining your own private fork/repository, keeping the values directly in `compose.yaml` is supported by design.
 
