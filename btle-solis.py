@@ -261,7 +261,7 @@ def publish_data_to_mqtt():
         payload = json.dumps(REGISTER_MAP)
 
         result = client.publish(
-            "homeassistant/btle-solis/data",
+            "home/btle-solis/data",
             payload,
             retain=True,
         )
@@ -269,7 +269,7 @@ def publish_data_to_mqtt():
         result.wait_for_publish()
 
         logger.info(
-            "MQTT publish successful: topic=homeassistant/btle-solis/data payload=%s bytes",
+            "MQTT publish successful: topic=home/btle-solis/data payload=%s bytes",
             len(payload),
         )
 
