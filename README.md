@@ -115,8 +115,6 @@ git clone https://github.com/Arnoudd/btle-solis.git
 cd btle-solis
 ```
 
-If you are using your own fork, replace the repository URL accordingly.
-
 ## 5. Configure `compose.yaml`
 
 All application configuration is intentionally kept in `compose.yaml`.
