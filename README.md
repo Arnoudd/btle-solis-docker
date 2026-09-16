@@ -108,7 +108,7 @@ docker compose version
 ## 4. Clone the repository
 
 ```bash
-git clone https://github.com/USERNAME/btle-solis.git
+git clone https://github.com/Arnouddo/btle-solis.git
 cd btle-solis
 ```
 
