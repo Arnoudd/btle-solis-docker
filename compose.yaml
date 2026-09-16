@@ -1,0 +1,32 @@
+services:
+  btle-solis:
+    container_name: btle-solis
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    # Bluepy needs direct access to the Raspberry Pi Bluetooth adapter.
+    network_mode: host
+    privileged: true
+
+    environment:
+      TZ: Europe/Amsterdam
+
+      # Solis inverter
+      SOLIS_MAC_ADDRESS: "XX:XX:XX:XX:XX:XX"
+
+      # MQTT broker
+      MQTT_BROKER: "192.168.1.100"
+      MQTT_PORT: "1883"
+      MQTT_USERNAME: "YOUR_MQTT_USERNAME"
+      MQTT_PASSWORD: "YOUR_MQTT_PASSWORD"
+
+      # Application
+      INTERVAL: "5"
+      TEST_MODE: "false"
+      LITE_MODE: "true"
+      LOG_LEVEL: "INFO"
+
+    volumes:
+      - /var/run/dbus:/var/run/dbus:ro
