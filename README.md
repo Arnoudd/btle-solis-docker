@@ -131,10 +131,10 @@ At minimum, change:
 
 ```yaml
 SOLIS_MAC_ADDRESS: "XX:XX:XX:XX:XX:XX"
-MQTT_BROKER: "192.168.1.100" # Leave empty if not needed for our MQTT configuration
-MQTT_PORT: "1883" # Leave empty if not needed for our MQTT configuration
-MQTT_USERNAME: "YOUR_MQTT_USERNAME"
-MQTT_PASSWORD: "YOUR_MQTT_PASSWORD"
+MQTT_BROKER: "192.168.1.100" 
+MQTT_PORT: "1883" 
+MQTT_USERNAME: "YOUR_MQTT_USERNAME" # Leave empty if not needed for our MQTT configuration
+MQTT_PASSWORD: "YOUR_MQTT_PASSWORD" # Leave empty if not needed for our MQTT configuration
 ```
 
 If your MQTT broker does not require authentication, leave `MQTT_USERNAME` and `MQTT_PASSWORD` empty.
