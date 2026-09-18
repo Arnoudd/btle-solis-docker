@@ -112,7 +112,7 @@ The project does not require Portainer, Dockhand, or any other management interf
 
 ```bash
 git clone https://github.com/Arnoudd/btle-solis.git
-cd btle-solis
+btle-solis-docker
 ```
 
 ## 5. Configure `compose.yaml`
