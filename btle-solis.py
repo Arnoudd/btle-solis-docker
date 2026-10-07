@@ -3,6 +3,7 @@ import logging
 import time
 import json
 import struct
+import queue
 
 from bluepy.btle import (
     UUID,
@@ -45,6 +46,14 @@ MQTT_BROKER_IP = os.getenv("MQTT_BROKER", "")
 MQTT_BROKER_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
+MQTT_COMMAND_TOPIC = os.getenv(
+    "MQTT_COMMAND_TOPIC",
+    "home/btle-solis/command",
+)
+MQTT_RESULT_TOPIC = os.getenv(
+    "MQTT_RESULT_TOPIC",
+    "home/btle-solis/command/result",
+)
 
 INTERVAL = int(os.getenv("INTERVAL", "15"))
 TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
@@ -67,6 +76,8 @@ else:
 logger.info("Starting btle-solis")
 logger.info("Bluetooth MAC address: %s", MAC_ADDRESS)
 logger.info("MQTT broker: %s:%s", MQTT_BROKER_IP, MQTT_BROKER_PORT)
+logger.info("MQTT command topic: %s", MQTT_COMMAND_TOPIC)
+logger.info("MQTT result topic: %s", MQTT_RESULT_TOPIC)
 logger.info("Interval: %s seconds", INTERVAL)
 logger.info("LITE_MODE: %s", LITE_MODE)
 logger.info("TEST_MODE: %s", TEST_MODE)
@@ -154,6 +165,28 @@ def construct_command(register_address: int, amount, func_code):
     return result
 
 
+def construct_write_command(register_address: int, value: int):
+    if not 0 <= register_address <= 0xFFFF:
+        raise ValueError("Register address must be between 0 and 65535")
+
+    if not 0 <= value <= 0xFFFF:
+        raise ValueError("Register value must be between 0 and 65535")
+
+    command = f"FE06{register_address:04X}{value:04X}"
+    crc_hex = calculate_checksum(command)
+
+    result = f"{command}{crc_hex}"
+
+    logger.debug(
+        "Constructed write command: register=%s value=%s command=%s",
+        register_address,
+        value,
+        result,
+    )
+
+    return result
+
+
 def parse_response(response, address, length):
     byte_count = response[2]
 
@@ -229,6 +262,17 @@ def parse_response(response, address, length):
 # MQTT
 # =============================================================================
 
+def configure_mqtt_client(client):
+    if MQTT_USERNAME != "" and MQTT_PASSWORD != "":
+        client.username_pw_set(
+            MQTT_USERNAME,
+            MQTT_PASSWORD,
+        )
+        logger.debug("MQTT authentication enabled")
+    else:
+        logger.debug("MQTT authentication disabled")
+
+
 def publish_data_to_mqtt():
     logger.info(
         "Publishing data to MQTT: %s:%s",
@@ -241,14 +285,7 @@ def publish_data_to_mqtt():
             mqtt.CallbackAPIVersion.VERSION2
         )
 
-        if MQTT_USERNAME != "" and MQTT_PASSWORD != "":
-            client.username_pw_set(
-                MQTT_USERNAME,
-                MQTT_PASSWORD,
-            )
-            logger.debug("MQTT authentication enabled")
-        else:
-            logger.debug("MQTT authentication disabled")
+        configure_mqtt_client(client)
 
         logger.debug("Connecting to MQTT broker")
 
@@ -294,7 +331,231 @@ class BtleSolis:
         self.char_ffe1_handle = None
         self.char_ffe2_handle = None
 
+        self.command_queue = queue.Queue()
+        self.command_mqtt_client = None
+
         self.cycle = 0
+
+    def setup_command_mqtt(self):
+        if not MQTT_BROKER_IP:
+            raise ValueError("MQTT_BROKER is required for MQTT commands")
+
+        self.command_mqtt_client = mqtt.Client(
+            mqtt.CallbackAPIVersion.VERSION2
+        )
+        configure_mqtt_client(self.command_mqtt_client)
+
+        self.command_mqtt_client.on_connect = self.on_command_mqtt_connect
+        self.command_mqtt_client.on_message = self.on_command_mqtt_message
+
+        logger.info(
+            "Connecting command MQTT client to %s:%s",
+            MQTT_BROKER_IP,
+            MQTT_BROKER_PORT,
+        )
+
+        self.command_mqtt_client.connect(
+            MQTT_BROKER_IP,
+            MQTT_BROKER_PORT,
+            60,
+        )
+        self.command_mqtt_client.loop_start()
+
+    def stop_command_mqtt(self):
+        if self.command_mqtt_client is not None:
+            logger.info("Stopping command MQTT client")
+
+            try:
+                self.command_mqtt_client.loop_stop()
+                self.command_mqtt_client.disconnect()
+            except Exception:
+                logger.exception("Error while stopping command MQTT client")
+
+            self.command_mqtt_client = None
+
+    def on_command_mqtt_connect(self, client, userdata, flags, reason_code, properties):
+        if reason_code.is_failure:
+            logger.error(
+                "Command MQTT connection failed: %s",
+                reason_code,
+            )
+            return
+
+        client.subscribe(MQTT_COMMAND_TOPIC)
+
+        logger.info(
+            "Subscribed to MQTT command topic: %s",
+            MQTT_COMMAND_TOPIC,
+        )
+
+    def on_command_mqtt_message(self, client, userdata, message):
+        try:
+            payload = json.loads(message.payload.decode("utf-8"))
+
+            if not isinstance(payload, dict):
+                raise ValueError("Command payload must be a JSON object")
+
+            register = payload.get("register")
+            value = payload.get("value")
+
+            if isinstance(register, bool) or not isinstance(register, int):
+                raise ValueError("register must be an integer")
+
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValueError("value must be an integer")
+
+            self.command_queue.put(
+                {
+                    "register": register,
+                    "value": value,
+                }
+            )
+
+            logger.info(
+                "MQTT write command queued: register=%s value=%s",
+                register,
+                value,
+            )
+
+        except Exception as exc:
+            logger.error(
+                "Invalid MQTT write command: %s",
+                exc,
+            )
+            self.publish_command_result(
+                {
+                    "status": "error",
+                    "error": str(exc),
+                }
+            )
+
+    def publish_command_result(self, result):
+        if self.command_mqtt_client is None:
+            logger.error(
+                "Cannot publish command result: MQTT client is not available"
+            )
+            return
+
+        try:
+            payload = json.dumps(result)
+
+            mqtt_result = self.command_mqtt_client.publish(
+                MQTT_RESULT_TOPIC,
+                payload,
+                retain=False,
+            )
+
+            mqtt_result.wait_for_publish()
+
+            logger.info(
+                "MQTT command result published: topic=%s payload=%s",
+                MQTT_RESULT_TOPIC,
+                payload,
+            )
+
+        except Exception:
+            logger.exception("Failed to publish MQTT command result")
+
+    def process_command_queue(self):
+        while True:
+            try:
+                command = self.command_queue.get_nowait()
+            except queue.Empty:
+                return
+
+            try:
+                self.process_write_command(
+                    command["register"],
+                    command["value"],
+                )
+            except Exception as exc:
+                logger.exception(
+                    "MQTT write command failed: register=%s value=%s",
+                    command.get("register"),
+                    command.get("value"),
+                )
+
+                self.publish_command_result(
+                    {
+                        "status": "error",
+                        "register": command.get("register"),
+                        "raw_value": command.get("value"),
+                        "error": str(exc),
+                    }
+                )
+            finally:
+                self.command_queue.task_done()
+
+    def process_write_command(self, register_address, raw_value):
+        register = registers.WRITE_REGISTERS.get(register_address)
+
+        if register is None:
+            raise ValueError(
+                f"Register {register_address} is not writable"
+            )
+
+        min_raw = register.get("min_raw")
+        max_raw = register.get("max_raw")
+
+        if min_raw is not None and raw_value < min_raw:
+            raise ValueError(
+                f"Value {raw_value} is below minimum {min_raw}"
+            )
+
+        if max_raw is not None and raw_value > max_raw:
+            raise ValueError(
+                f"Value {raw_value} is above maximum {max_raw}"
+            )
+
+        command = construct_write_command(
+            register_address,
+            raw_value,
+        )
+
+        response = self.send_command_and_get_response(command)
+
+        expected = bytes.fromhex(
+            f"FE06{register_address:04X}{raw_value:04X}"
+        )
+
+        if response[:-2] != expected:
+            raise ValueError(
+                "Unexpected FC06 response: "
+                f"{response.hex().upper()}"
+            )
+
+        gain = register.get("gain", 1)
+        calculated_value = (
+            raw_value * gain
+            if gain is not None
+            else raw_value
+        )
+
+        if (
+            isinstance(calculated_value, float)
+            and calculated_value != int(calculated_value)
+        ):
+            calculated_value = round(calculated_value, 2)
+
+        result = {
+            "status": "success",
+            "register": register_address,
+            "name": register.get("name", "unknown"),
+            "raw_value": raw_value,
+            "value": calculated_value,
+            "unit": register.get("unit", ""),
+        }
+
+        logger.info(
+            "MQTT register write successful: register=%s name=%s raw_value=%s value=%s %s",
+            register_address,
+            register.get("name", "unknown"),
+            raw_value,
+            calculated_value,
+            register.get("unit", ""),
+        )
+
+        self.publish_command_result(result)
 
     def connect(self):
         logger.info(
@@ -467,6 +728,8 @@ class BtleSolis:
 
                 continue
 
+        self.process_command_queue()
+
         if TEST_MODE:
             logger.info(
                 "TEST_MODE enabled - MQTT publish skipped"
@@ -488,6 +751,8 @@ class BtleSolis:
     def loop(self):
 
         logger.info("Entering continuous operation")
+
+        self.setup_command_mqtt()
 
         while True:
 
