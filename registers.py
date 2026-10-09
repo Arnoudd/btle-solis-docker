@@ -9,6 +9,8 @@ REGISTER_MAP_LITE = {
     33165: {"value":None,"num":2,"negative":0,"datamode":0,"datatype":1,"gain":0.01,"unit":"kWh","name":"total_battery_discharge_energy"},
     33167: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.01,"unit":"kWh","name":"today_battery_discharge_energy"},
     33168: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.01,"unit":"kWh","name":"yesterday_battery_discharge_energy"},
+    43117: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_battery_charging_current_setting"},
+    43118: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_battery_discharge_current_setting"},
     43141: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"timing_charging_current_setting"},
     43142: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"timing_discharge_current_setting"}
 }
