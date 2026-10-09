@@ -257,7 +257,7 @@ For example, in `LITE_MODE` the application reads the configured register blocks
 
 ## 10. MQTT register writes
 
-The application accepts register-write commands over MQTT. Incoming commands are queued and processed by the BLE worker as part of its polling loop, so commands do not use the inverter BLE connection concurrently with register reads.
+The application accepts register-write commands over MQTT. The MQTT client subscribes to the command topic and validates each JSON message, then puts it on an in-memory Python queue. The BLE worker processes queued writes sequentially as part of its polling loop, so a write does not run concurrently with a register read. Commands normally run after the current register-read cycle; if the BLE connection fails, pending commands wait until the worker has reconnected and reaches command processing again.
 
 **Important:** writes change inverter/battery settings. Check the inverter and battery/BMS limits first. These registers use a 0.1 A scale: a raw value of `100` means `10.0 A`. The response acknowledges the Modbus write; read the register again to verify the stored setting. Only registers in `WRITE_REGISTERS` are accepted. Register 43117 has been confirmed working with the tested Solis S6-EH3P10K-H-ZP setup; the other allowlisted registers should be verified individually on your model and firmware before you rely on them.
 
@@ -280,6 +280,30 @@ Example: set register 43117 (maximum battery charging current setting) to 10.0 A
 ```json
 {"register":43117,"value":100}
 ```
+
+
+### What “queued command” means
+
+The **MQTT command topic** is the entry point for a write request. The application copies a valid request into its own in-memory queue; it is not a durable queue stored by the MQTT broker. A command is then sent to the inverter by the BLE worker, one at a time.
+
+- Send commands to `home/btle-solis/command` (or the topic configured with `MQTT_COMMAND_TOPIC`).
+- Use integer `register` and raw integer `value` fields. Do not send the scaled value as a decimal. For the current values, `100` means `10.0 A`.
+- Use `retain: false` for commands. A retained command can be replayed when a client reconnects, which is usually undesirable for a write operation.
+- Listen on `home/btle-solis/command/result` before publishing if you need to catch the response. Results include `status: success` or `status: error`.
+- A successful Modbus echo confirms the write response was received. It is still good practice to read the register back to verify the current setting.
+
+For example, using Home Assistant's **Developer Tools → Actions**, choose `mqtt.publish` and send this action data to set register 43117 to 10 A:
+
+```yaml
+action: mqtt.publish
+data:
+  topic: home/btle-solis/command
+  qos: 0
+  retain: false
+  payload: '{"register":43117,"value":100}'
+```
+
+The same pattern applies to other allowlisted registers. Change the register number and raw value only after checking what that register controls and the supported battery/BMS current limits.
 
 ### Example queue messages using mosquitto_pub
 
@@ -309,7 +333,7 @@ Time-charging discharge current (register 43142) to 10.0 A:
 mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43142,"value":100}'
 ```
 
-Subscribe to the command results:
+Subscribe to the command results (the command-result messages are not retained, so start the subscriber before publishing if you want to see the response):
 
 ```bash
 mosquitto_sub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command/result' -v
@@ -446,10 +470,10 @@ Then inspect the logs:
 docker compose logs -f
 ```
 
-The expected MQTT topic is:
+The expected MQTT data topic is:
 
 ```text
-homeassistant/btle-solis/data
+home/btle-solis/data
 ```
 
 ## 15. LITE_MODE
