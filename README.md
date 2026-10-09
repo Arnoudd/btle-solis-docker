@@ -12,6 +12,7 @@ The original project was written for the Zonneplan Nexus Home battery with a Sol
 
 - Reads Solis inverter data over Bluetooth Low Energy.
 - Publishes the collected data as JSON to MQTT.
+- Accepts queued MQTT commands to write a small allowlist of Modbus registers over BLE, and publishes command results.
 - Supports `LITE_MODE` for a smaller set of registers.
 - Runs as a Docker container with Docker Compose.
 - Configuration is kept in `compose.yaml`.
@@ -112,7 +113,7 @@ The project does not require Portainer, Dockhand, or any other management interf
 
 ```bash
 git clone https://github.com/Arnoudd/btle-solis-docker.git
-btle-solis-docker
+cd btle-solis-docker
 ```
 
 ## 5. Configure `compose.yaml`
@@ -177,7 +178,7 @@ The repository contains a standard Compose file. You do **not** need Portainer o
 
 In Portainer, create a new **Stack** and deploy it from the Git repository, or paste/upload the contents of `compose.yaml`.
 
-If deploying from Git, select the repository and set the Compose file path to:
+If deploying from Git, select the repository, choose the branch `feature/mqtt-register-write` to use the MQTT write feature, and set the Compose file path to:
 
 ```text
 compose.yaml
@@ -192,6 +193,9 @@ Edit the values in the `environment:` section before deploying, especially:
 - `MQTT_PASSWORD`
 
 The target Docker endpoint must be the Linux/Raspberry Pi host that has the Bluetooth adapter. Running the container on a different Docker host will not give it access to the Raspberry Pi's Bluetooth hardware.
+
+When deploying this branch, the stack must **build the image from its Dockerfile**. Do not use a Portainer action that only pulls and redeploys an image. If the stack reports an error such as `pull access denied for btle-solis-btle-solis`, update/redeploy the stack with image pulling disabled and Dockerfile build enabled. The repository Compose file uses `build:`; it is not intended to pull a pre-published Docker Hub image.
+
 
 ### Dockhand
 
@@ -243,14 +247,113 @@ docker compose up -d --build
 The application publishes the inverter data to:
 
 ```text
-homeassistant/btle-solis/data
+home/btle-solis/data
 ```
 
 The payload is a JSON object containing the values from the configured register map.
 
 For example, in `LITE_MODE` the application reads the configured register blocks from `REGISTERS_LITE` and publishes their resulting values.
 
-## 10. Home Assistant
+
+## 10. MQTT register writes
+
+The application accepts register-write commands over MQTT. The MQTT client subscribes to the command topic and validates each JSON message, then puts it on an in-memory Python queue. The BLE worker processes queued writes sequentially as part of its polling loop, so a write does not run concurrently with a register read. Commands normally run after the current register-read cycle; if the BLE connection fails, pending commands wait until the worker has reconnected and reaches command processing again.
+
+**Important:** writes change inverter/battery settings. Check the inverter and battery/BMS limits first. These registers use a 0.1 A scale: a raw value of `100` means `10.0 A`. The response acknowledges the Modbus write; read the register again to verify the stored setting. Only registers in `WRITE_REGISTERS` are accepted. Register 43117 has been confirmed working with the tested Solis S6-EH3P10K-H-ZP setup; the other allowlisted registers should be verified individually on your model and firmware before you rely on them.
+
+### Topics
+
+| Purpose | Topic |
+|---|---|
+| Inverter data | `home/btle-solis/data` |
+| Write command input | `home/btle-solis/command` |
+| Write command result | `home/btle-solis/command/result` |
+
+Command and result topics can be changed with `MQTT_COMMAND_TOPIC` and `MQTT_RESULT_TOPIC` in `compose.yaml`.
+
+### Send a write command
+
+Payloads must be JSON objects containing integer `register` and `value` fields. The `value` is the raw register value, not the scaled amps value.
+
+Example: set register 43117 (maximum battery charging current setting) to 10.0 A:
+
+```json
+{"register":43117,"value":100}
+```
+
+
+### What “queued command” means
+
+The **MQTT command topic** is the entry point for a write request. The application copies a valid request into its own in-memory queue; it is not a durable queue stored by the MQTT broker. A command is then sent to the inverter by the BLE worker, one at a time.
+
+- Send commands to `home/btle-solis/command` (or the topic configured with `MQTT_COMMAND_TOPIC`).
+- Use integer `register` and raw integer `value` fields. Do not send the scaled value as a decimal. For the current values, `100` means `10.0 A`.
+- Use `retain: false` for commands. A retained command can be replayed when a client reconnects, which is usually undesirable for a write operation.
+- Listen on `home/btle-solis/command/result` before publishing if you need to catch the response. Results include `status: success` or `status: error`.
+- A successful Modbus echo confirms the write response was received. It is still good practice to read the register back to verify the current setting.
+
+For example, using Home Assistant's **Developer Tools → Actions**, choose `mqtt.publish` and send this action data to set register 43117 to 10 A:
+
+```yaml
+action: mqtt.publish
+data:
+  topic: home/btle-solis/command
+  qos: 0
+  retain: false
+  payload: '{"register":43117,"value":100}'
+```
+
+The same pattern applies to other allowlisted registers. Change the register number and raw value only after checking what that register controls and the supported battery/BMS current limits.
+
+### Example queue messages using mosquitto_pub
+
+Run these commands on a machine with Mosquitto client tools installed. Replace the broker address as appropriate. If the broker requires authentication, add `-u "MQTT_USERNAME" -P "MQTT_PASSWORD"`.
+
+Maximum battery charge current (register 43117) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43117,"value":100}'
+```
+
+Maximum battery discharge current (register 43118) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43118,"value":100}'
+```
+
+Time-charging charge current (register 43141) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43141,"value":100}'
+```
+
+Time-charging discharge current (register 43142) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43142,"value":100}'
+```
+
+Subscribe to the command results (the command-result messages are not retained, so start the subscriber before publishing if you want to see the response):
+
+```bash
+mosquitto_sub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command/result' -v
+```
+
+Example successful result:
+
+```json
+{"status":"success","register":43117,"name":"maximum_battery_charging_current_setting","raw_value":100,"value":10.0,"unit":"A"}
+```
+
+Example error result for a value exceeding the configured whitelist limit:
+
+```json
+{"status":"error","register":43118,"raw_value":1001,"error":"Value 1001 is above maximum 1000"}
+```
+
+Commands are queued and may be processed after the next polling reads, so the result is not necessarily instantaneous. Check the result topic and container logs before publishing a duplicate command.
+
+## 11. Home Assistant
 
 Home Assistant can consume the MQTT topic and expose the values as sensors.
 
@@ -262,7 +365,7 @@ Original project:
 
 https://github.com/cryptocake/btle-solis
 
-## 11. Updating
+## 12. Updating
 
 Pull the latest repository version and rebuild the container:
 
@@ -273,7 +376,7 @@ docker compose up -d --build
 
 When using Portainer, Dockhand, or another Compose management tool, use its normal redeploy/update function after pulling the new repository version.
 
-## 12. Stopping and starting
+## 13. Stopping and starting
 
 Stop the container:
 
@@ -287,7 +390,7 @@ Start it again:
 docker compose up -d
 ```
 
-## 13. Troubleshooting
+## 14. Troubleshooting
 
 ### `hci0` is missing
 
@@ -367,13 +470,13 @@ Then inspect the logs:
 docker compose logs -f
 ```
 
-The expected MQTT topic is:
+The expected MQTT data topic is:
 
 ```text
-homeassistant/btle-solis/data
+home/btle-solis/data
 ```
 
-## 14. LITE_MODE
+## 15. LITE_MODE
 
 With:
 
@@ -393,7 +496,7 @@ the full register map is used.
 
 LITE_MODE was introduced by the original project for installations where other battery information is already retrieved through another protocol.
 
-## 15. Logging
+## 16. Logging
 
 The application uses Python's standard logging framework.
 

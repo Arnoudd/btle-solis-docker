@@ -9,13 +9,18 @@ REGISTER_MAP_LITE = {
     33165: {"value":None,"num":2,"negative":0,"datamode":0,"datatype":1,"gain":0.01,"unit":"kWh","name":"total_battery_discharge_energy"},
     33167: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.01,"unit":"kWh","name":"today_battery_discharge_energy"},
     33168: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.01,"unit":"kWh","name":"yesterday_battery_discharge_energy"},
+    43117: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_battery_charging_current_setting"},
+    43118: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_battery_discharge_current_setting"},
     43141: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"timing_charging_current_setting"},
-    43142: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"timing_discharge_current_setting"}
+    43142: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"timing_discharge_current_setting"}
 }
 
 REGISTERS_LITE = {
     "33079": {"length": 15, "func_code": "04"},
-    "33161": {"length": 8, "func_code": "04"}
+    "33161": {"length": 8, "func_code": "04"},
+    "43117": {"length": 1, "func_code": "03"},
+    "43118": {"length": 1, "func_code": "03"},
+    "43141": {"length": 2, "func_code": "03"}
 }
 
 REGISTER_MAP = {
@@ -58,35 +63,35 @@ REGISTER_MAP = {
     34352: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MinLocation"},
     34353: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MinVoltageCore"},
     34354: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MaxLocation"},
-    34355: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MaxVoltageCore"},
+    34355: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"BatteryBMS_MaxVoltageCore"},
     34356: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MinLocationTemperature"},
     34357: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MinTemperatureCore"},
     34358: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MaxLocationTemperature"},
     34359: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_MaxTemperatureCore"},
     34360: {"value":None,"num":2,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"AH","name":"BatteryBMS_Capacity"},
-    34362: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_NumberCycles"},
-    34363: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_NumberParallel"},
-    34364: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_NumberPacks"},
-    34365: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"BatteryBMS_NumberModules"},
-    43009: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"current_operating_battery_model"},
-    43011: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"%","name":"over_discharge_soc"},
-    43012: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_charging_current"},
-    43013: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_discharge_current"},
-    43018: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"%","name":"strong_charge_soc"},
-    43027: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":10,"unit":"W","name":"force_limit_current"},
-    43110: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"","name":"energy_storage_control_switch"},
-    43117: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_battery_charging_current_setting"},
-    43118: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"maximum_battery_discharge_current_setting"},
-    43348: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"V","name":"awaken_voltage"},
-    43349: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"s","name":"awaken_time"},
-    43374: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":None,"unit":"","name":"output_port_control"},
-    43376: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"s","name":"Awaken_Time_Setting"},
-    43378: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":None,"unit":"","name":"G100_Manual_Fault_Clearing"},
-    43481: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"%","name":"Overdischarge_Hysteresis_SOC"},
-    43482: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":1,"unit":"%","name":"battery_Healing_SOC"},
+    34362: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"BatteryBMS_NumberCycles"},
+    34363: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"BatteryBMS_NumberParallel"},
+    34364: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"BatteryBMS_NumberPacks"},
+    34365: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"BatteryBMS_NumberModules"},
+    43009: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"current_operating_battery_model"},
+    43011: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"%","name":"over_discharge_soc"},
+    43012: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"maximum_charging_current"},
+    43013: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"maximum_discharge_current"},
+    43018: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"%","name":"strong_charge_soc"},
+    43027: {"value":None,"num":1,"negative":0,"datamode":0,"gain":10,"unit":"W","name":"force_limit_current"},
+    43110: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"energy_storage_control_switch"},
+    43117: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"maximum_battery_charging_current_setting"},
+    43118: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"maximum_battery_discharge_current_setting"},
+    43348: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"V","name":"awaken_voltage"},
+    43349: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"s","name":"awaken_time"},
+    43374: {"value":None,"num":1,"negative":0,"datamode":0,"gain":None,"unit":"","name":"output_port_control"},
+    43376: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"s","name":"Awaken_Time_Setting"},
+    43378: {"value":None,"num":1,"negative":0,"datamode":0,"gain":None,"unit":"","name":"G100_Manual_Fault_Clearing"},
+    43481: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"%","name":"Overdischarge_Hysteresis_SOC"},
+    43482: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"%","name":"battery_Healing_SOC"},
     43802: {"value":None,"num":1,"negative":0,"datamode":0,"gain":1,"unit":"","name":"batteryDual_model"},
-    43141: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"timing_charging_current_setting"},
-    43142: {"value":None,"num":1,"negative":0,"datamode":0,"datatype":1,"gain":0.1,"unit":"A","name":"timing_discharge_current_setting"}
+    43141: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"timing_charging_current_setting"},
+    43142: {"value":None,"num":1,"negative":0,"datamode":0,"gain":0.1,"unit":"A","name":"timing_discharge_current_setting"}
 }
 
 REGISTERS = {
@@ -102,4 +107,11 @@ REGISTERS = {
     "43374": {"length": 5, "func_code": "03"},
     "43481": {"length": 2, "func_code": "03"},
     "43802": {"length": 1, "func_code": "03"},
+}
+
+WRITE_REGISTERS = {
+    43117: {"name": "maximum_battery_charging_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
+    43118: {"name": "maximum_battery_discharge_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
+    43141: {"name": "timing_charging_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
+    43142: {"name": "timing_discharge_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
 }
