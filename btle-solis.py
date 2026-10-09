@@ -717,6 +717,22 @@ class BtleSolis:
                     reg,
                 )
 
+            except BTLEException as e:
+                # A BTLEException can mean bluepy's helper process or the
+                # peripheral connection has stopped. Continuing to the next
+                # register leaves the same dead helper in use and can result
+                # in a stream of errors plus stale MQTT data. Let loop()
+                # disconnect and establish a fresh BLE session instead.
+                error_count += 1
+
+                logger.error(
+                    "BLE failure while retrieving register %s: %s. "
+                    "Aborting this data cycle and reconnecting.",
+                    reg,
+                    e,
+                )
+                raise
+
             except Exception as e:
                 error_count += 1
 
