@@ -10,7 +10,7 @@ The original project was written for the Zonneplan Nexus Home battery with a Sol
 
 ## Features
 
-- Reads Solis inverter data over Bluetooth Low Energy.
+- Reads and writes Solis inverter data over Bluetooth Low Energy.
 - Publishes the collected data as JSON to MQTT.
 - Accepts queued MQTT commands to write a small allowlist of Modbus registers over BLE, and publishes command results.
 - Supports `LITE_MODE` for a smaller set of registers.
