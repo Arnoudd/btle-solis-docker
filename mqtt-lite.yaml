@@ -138,3 +138,59 @@ sensor:
       manufacturer: "Solis"
       name: "Zonneplan Nexus"
       model: "V1"
+
+  - name: "Maximum Battery Charging Current Setting"
+    unique_id: "maximum_battery_charging_current_setting"
+    state_topic: "home/btle-solis/data"
+    device_class: "current"
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    value_template: "{{ value_json['43117'].value }}"
+    icon: mdi:flash
+    device:
+      identifiers: "SOLIS-NEXUS"
+      manufacturer: "Solis"
+      name: "Zonneplan Nexus"
+      model: "V1"
+
+  - name: "Maximum Battery Discharge Current Setting"
+    unique_id: "maximum_battery_discharge_current_setting"
+    state_topic: "home/btle-solis/data"
+    device_class: "current"
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    value_template: "{{ value_json['43118'].value }}"
+    icon: mdi:flash-outline
+    device:
+      identifiers: "SOLIS-NEXUS"
+      manufacturer: "Solis"
+      name: "Zonneplan Nexus"
+      model: "V1"
+
+  - name: "Time Charging Charge Current"
+    unique_id: "time_charging_charge_current"
+    state_topic: "home/btle-solis/data"
+    device_class: "current"
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    value_template: "{{ value_json['43141'].value }}"
+    icon: mdi:battery-charging
+    device:
+      identifiers: "SOLIS-NEXUS"
+      manufacturer: "Solis"
+      name: "Zonneplan Nexus"
+      model: "V1"
+
+  - name: "Time Charging Discharge Current"
+    unique_id: "time_charging_discharge_current"
+    state_topic: "home/btle-solis/data"
+    device_class: "current"
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    value_template: "{{ value_json['43142'].value }}"
+    icon: mdi:battery-minus
+    device:
+      identifiers: "SOLIS-NEXUS"
+      manufacturer: "Solis"
+      name: "Zonneplan Nexus"
+      model: "V1"
