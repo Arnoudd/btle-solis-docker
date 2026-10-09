@@ -15,7 +15,10 @@ REGISTER_MAP_LITE = {
 
 REGISTERS_LITE = {
     "33079": {"length": 15, "func_code": "04"},
-    "33161": {"length": 8, "func_code": "04"}
+    "33161": {"length": 8, "func_code": "04"},
+    "43117": {"length": 1, "func_code": "03"},
+    "43118": {"length": 1, "func_code": "03"},
+    "43141": {"length": 2, "func_code": "03"}
 }
 
 REGISTER_MAP = {
@@ -105,13 +108,8 @@ REGISTERS = {
 }
 
 WRITE_REGISTERS = {
-    43117: {
-        "name": "maximum_battery_charging_current_setting",
-        "num": 1,
-        "negative": 0,
-        "gain": 0.1,
-        "unit": "A",
-        "min_raw": 0,
-        "max_raw": 1000,
-    },
+    43117: {"name": "maximum_battery_charging_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
+    43118: {"name": "maximum_battery_discharge_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
+    43141: {"name": "timing_charging_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
+    43142: {"name": "timing_discharge_current_setting", "num": 1, "negative": 0, "gain": 0.1, "unit": "A", "min_raw": 0, "max_raw": 1000},
 }
