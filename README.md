@@ -247,7 +247,7 @@ docker compose up -d --build
 The application publishes the inverter data to:
 
 ```text
-homeassistant/btle-solis/data
+home/btle-solis/data
 ```
 
 The payload is a JSON object containing the values from the configured register map.
