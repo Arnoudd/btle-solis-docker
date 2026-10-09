@@ -468,6 +468,24 @@ class BtleSolis:
                     command["register"],
                     command["value"],
                 )
+            except BTLEException as exc:
+                logger.exception(
+                    "BLE failure while processing MQTT write: register=%s value=%s. "
+                    "Aborting the cycle so the BLE connection can be rebuilt.",
+                    command.get("register"),
+                    command.get("value"),
+                )
+
+                self.publish_command_result(
+                    {
+                        "status": "error",
+                        "register": command.get("register"),
+                        "raw_value": command.get("value"),
+                        "error": str(exc),
+                    }
+                )
+                raise
+
             except Exception as exc:
                 logger.exception(
                     "MQTT write command failed: register=%s value=%s",
