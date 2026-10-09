@@ -250,7 +250,82 @@ The payload is a JSON object containing the values from the configured register 
 
 For example, in `LITE_MODE` the application reads the configured register blocks from `REGISTERS_LITE` and publishes their resulting values.
 
-## 10. Home Assistant
+
+## 10. MQTT register writes
+
+The application accepts register-write commands over MQTT. Incoming commands are queued and processed by the BLE worker as part of its polling loop, so commands do not use the inverter BLE connection concurrently with register reads.
+
+**Important:** writes change inverter/battery settings. Check the inverter and battery/BMS limits first. These registers use a 0.1 A scale: a raw value of `100` means `10.0 A`. The response acknowledges the Modbus write; read the register again to verify the stored setting. Only registers in `WRITE_REGISTERS` are accepted.
+
+### Topics
+
+| Purpose | Topic |
+|---|---|
+| Inverter data | `home/btle-solis/data` |
+| Write command input | `home/btle-solis/command` |
+| Write command result | `home/btle-solis/command/result` |
+
+Command and result topics can be changed with `MQTT_COMMAND_TOPIC` and `MQTT_RESULT_TOPIC` in `compose.yaml`.
+
+### Send a write command
+
+Payloads must be JSON objects containing integer `register` and `value` fields. The `value` is the raw register value, not the scaled amps value.
+
+Example: set register 43117 (maximum battery charging current setting) to 10.0 A:
+
+```json
+{"register":43117,"value":100}
+```
+
+### Example queue messages using mosquitto_pub
+
+Run these commands on a machine with Mosquitto client tools installed. Replace the broker address as appropriate. If the broker requires authentication, add `-u "MQTT_USERNAME" -P "MQTT_PASSWORD"`.
+
+Maximum battery charge current (register 43117) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43117,"value":100}'
+```
+
+Maximum battery discharge current (register 43118) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43118,"value":100}'
+```
+
+Time-charging charge current (register 43141) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43141,"value":100}'
+```
+
+Time-charging discharge current (register 43142) to 10.0 A:
+
+```bash
+mosquitto_pub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command' -m '{"register":43142,"value":100}'
+```
+
+Subscribe to the command results:
+
+```bash
+mosquitto_sub -h 192.168.1.100 -p 1883 -t 'home/btle-solis/command/result' -v
+```
+
+Example successful result:
+
+```json
+{"status":"success","register":43117,"name":"maximum_battery_charging_current_setting","raw_value":100,"value":10.0,"unit":"A"}
+```
+
+Example error result for a value exceeding the configured whitelist limit:
+
+```json
+{"status":"error","register":43118,"raw_value":1001,"error":"Value 1001 is above maximum 1000"}
+```
+
+Commands are queued and may be processed after the next polling reads, so the result is not necessarily instantaneous. Check the result topic and container logs before publishing a duplicate command.
+
+## 11. Home Assistant
 
 Home Assistant can consume the MQTT topic and expose the values as sensors.
 
@@ -262,7 +337,7 @@ Original project:
 
 https://github.com/cryptocake/btle-solis
 
-## 11. Updating
+## 12. Updating
 
 Pull the latest repository version and rebuild the container:
 
@@ -273,7 +348,7 @@ docker compose up -d --build
 
 When using Portainer, Dockhand, or another Compose management tool, use its normal redeploy/update function after pulling the new repository version.
 
-## 12. Stopping and starting
+## 13. Stopping and starting
 
 Stop the container:
 
@@ -287,7 +362,7 @@ Start it again:
 docker compose up -d
 ```
 
-## 13. Troubleshooting
+## 14. Troubleshooting
 
 ### `hci0` is missing
 
@@ -373,7 +448,7 @@ The expected MQTT topic is:
 homeassistant/btle-solis/data
 ```
 
-## 14. LITE_MODE
+## 15. LITE_MODE
 
 With:
 
@@ -393,7 +468,7 @@ the full register map is used.
 
 LITE_MODE was introduced by the original project for installations where other battery information is already retrieved through another protocol.
 
-## 15. Logging
+## 16. Logging
 
 The application uses Python's standard logging framework.
 
