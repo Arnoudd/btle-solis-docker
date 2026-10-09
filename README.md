@@ -12,6 +12,7 @@ The original project was written for the Zonneplan Nexus Home battery with a Sol
 
 - Reads Solis inverter data over Bluetooth Low Energy.
 - Publishes the collected data as JSON to MQTT.
+- Accepts queued MQTT commands to write a small allowlist of Modbus registers over BLE, and publishes command results.
 - Supports `LITE_MODE` for a smaller set of registers.
 - Runs as a Docker container with Docker Compose.
 - Configuration is kept in `compose.yaml`.
@@ -112,7 +113,7 @@ The project does not require Portainer, Dockhand, or any other management interf
 
 ```bash
 git clone https://github.com/Arnoudd/btle-solis-docker.git
-btle-solis-docker
+cd btle-solis-docker
 ```
 
 ## 5. Configure `compose.yaml`
@@ -177,7 +178,7 @@ The repository contains a standard Compose file. You do **not** need Portainer o
 
 In Portainer, create a new **Stack** and deploy it from the Git repository, or paste/upload the contents of `compose.yaml`.
 
-If deploying from Git, select the repository and set the Compose file path to:
+If deploying from Git, select the repository, choose the branch `feature/mqtt-register-write` to use the MQTT write feature, and set the Compose file path to:
 
 ```text
 compose.yaml
@@ -192,6 +193,9 @@ Edit the values in the `environment:` section before deploying, especially:
 - `MQTT_PASSWORD`
 
 The target Docker endpoint must be the Linux/Raspberry Pi host that has the Bluetooth adapter. Running the container on a different Docker host will not give it access to the Raspberry Pi's Bluetooth hardware.
+
+When deploying this branch, the stack must **build the image from its Dockerfile**. Do not use a Portainer action that only pulls and redeploys an image. If the stack reports an error such as `pull access denied for btle-solis-btle-solis`, update/redeploy the stack with image pulling disabled and Dockerfile build enabled. The repository Compose file uses `build:`; it is not intended to pull a pre-published Docker Hub image.
+
 
 ### Dockhand
 
@@ -255,7 +259,7 @@ For example, in `LITE_MODE` the application reads the configured register blocks
 
 The application accepts register-write commands over MQTT. Incoming commands are queued and processed by the BLE worker as part of its polling loop, so commands do not use the inverter BLE connection concurrently with register reads.
 
-**Important:** writes change inverter/battery settings. Check the inverter and battery/BMS limits first. These registers use a 0.1 A scale: a raw value of `100` means `10.0 A`. The response acknowledges the Modbus write; read the register again to verify the stored setting. Only registers in `WRITE_REGISTERS` are accepted.
+**Important:** writes change inverter/battery settings. Check the inverter and battery/BMS limits first. These registers use a 0.1 A scale: a raw value of `100` means `10.0 A`. The response acknowledges the Modbus write; read the register again to verify the stored setting. Only registers in `WRITE_REGISTERS` are accepted. Register 43117 has been confirmed working with the tested Solis S6-EH3P10K-H-ZP setup; the other allowlisted registers should be verified individually on your model and firmware before you rely on them.
 
 ### Topics
 
